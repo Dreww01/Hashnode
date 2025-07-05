@@ -66,6 +66,11 @@ def post_to_hashnode(title, content):
     response = requests.post(url, headers=headers, json={"query": query, "variables": variables})
     return response.status_code == 200
 
+@app.get("/")
+def root():
+    return {"message": "Hello, Welcome to my LLM"}
+
+    
 # === FastAPI Webhook Endpoint ===
 @app.post("/webhook")
 async def handle_webhook(payload: WebhookPayload):
