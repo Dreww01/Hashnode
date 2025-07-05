@@ -1,5 +1,21 @@
-fastapi
-uvicorn
-openai
-requests
-python-dotenv
+# Core dependencies
+fastapi==0.103.1
+starlette==0.27.0
+pydantic==1.9.1
+uvicorn==0.23.2
+
+# External API clients
+openai==1.8.0  # Explicit version to resolve ChatCompletion usage
+requests==2.31.0
+
+# Environment configuration
+python-dotenv==1.0.0
+
+# Date/time utilities
+python-dateutil==2.8.2
+pytz==2022.6
+zoneinfo==0.2.1  # Required for timezone-aware datetime.now()
+
+# Development tools
+black==22.10.0
+flake8==3.7.7
