@@ -3,6 +3,7 @@ fastapi
 starlette
 pydantic
 uvicorn
+schedule
 
 # External API clients
 openai  # Explicit version to resolve ChatCompletion usage
