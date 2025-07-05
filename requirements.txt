@@ -14,7 +14,6 @@ python-dotenv
 # Date/time utilities
 python-dateutil
 pytz
-zoneinfo  # Required for timezone-aware datetime.now()
 
 # Development tools
 black
