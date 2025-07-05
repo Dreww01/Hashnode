@@ -68,9 +68,9 @@ def post_to_hashnode(title, content):
 
 @app.get("/")
 def root():
-    return {"message": "Hello, Welcome to my LLM"}
+    return {"message": "IF YOU ARE SEEING THIS, YOU ARE ON THE RIGHT PATH"}
 
-    
+
 # === FastAPI Webhook Endpoint ===
 @app.post("/webhook")
 async def handle_webhook(payload: WebhookPayload):
