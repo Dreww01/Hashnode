@@ -2,6 +2,8 @@ from fastapi import FastAPI, Request
 import subprocess, os, json, openai, requests
 from dotenv import load_dotenv
 from pydantic import BaseModel
+from datetime import datetime
+
 
 load_dotenv()
 
@@ -75,3 +77,12 @@ async def handle_webhook(payload: WebhookPayload):
             posted = post_to_hashnode(title, summary)
             print("✅ Posted:", title) if posted else print("❌ Failed:", title)
     return {"status": "processed"}
+
+
+# This is to keep the server awake - so that railway will not shut it down(hosted in thr free tier)
+@app.get("/health")
+async def health_check():
+    """Simple health check endpoint"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat()
