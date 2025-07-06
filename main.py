@@ -1,9 +1,11 @@
 from fastapi import FastAPI, Request
-import subprocess, os, json, openai, requests
+import subprocess, os, json, requests
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from datetime import datetime
 import logging
+import openai
+from openai import OpenAI
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -16,6 +18,9 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 app = FastAPI()
 
+client = OpenAI(api_key=OPENAI_API_KEY)
+
+
 class WebhookPayload(BaseModel):
     ref: str
     head_commit: dict
@@ -23,28 +28,19 @@ class WebhookPayload(BaseModel):
     repository: dict
 
 # === Util: Create AI summary ===
-def generate_summary(text: str):
-    if not OPENAI_API_KEY:
-        logger.warning("No OpenAI API key found — returning raw commit message.")
-        return text
-
+def generate_summary(text: str) -> str:
     try:
-        openai.api_key = OPENAI_API_KEY
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4",
             messages=[{
                 "role": "user",
-                "content": f"Write a short, professional developer blog post summarizing this GitHub merge commit:\n\n{text}"
+                "content": f"Write a concise developer journal summary from this git commit:\n\n{text}"
             }],
-            max_tokens=200,
-            temperature=0.7,
+            max_tokens=200
         )
-        print(generate_summary("Merge branch 'feature/authentication' into main"))
-
         return response.choices[0].message.content.strip()
-
     except Exception as e:
-        logger.error("OpenAI API failed: %s", str(e))
+        logger.error("OpenAI API failed: %s", e)
         return text
     
 
