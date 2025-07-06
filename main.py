@@ -122,6 +122,7 @@ async def handle_webhook(request: Request):
         title = f"{repo_name} – {commit_type}: {short_message}"
 
         # Summary via ChatGPT with context
+        '''
         contextual_prompt = (
             f"Write a professional, developer-style blog summary from this Git commit.\n\n"
             f"Repository: {repo_name}\n"
@@ -130,6 +131,7 @@ async def handle_webhook(request: Request):
             f"Timestamp: {timestamp}\n\n"
             f"Commit Message:\n{message}"
         )
+        '''
 
         summary = generate_summary(contextual_prompt)
 
