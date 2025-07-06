@@ -158,6 +158,8 @@ Summary:
 This update improves the clarity of the `generate_summary` function by breaking up long lines and adding inline documentation. It helps future contributors understand how summaries are generated.
 ```
 
+![image](https://github.com/user-attachments/assets/f1062da9-bf51-47a0-959b-17272eb9cab0)
+
 ---
 
 ## 📌 Planned Features (Future)
