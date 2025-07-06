@@ -51,11 +51,12 @@ def generate_summary(text: str):
 
 
 # === Util: Post to Hashnode ===
-def post_to_hashnode(title, content):
+def post_to_hashnode(title: str, content: str) -> bool:
     url = "https://gql.hashnode.com"
+
     headers = {
-        "Authorization": HASHNODE_TOKEN,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Authorization": HASHNODE_TOKEN
     }
 
     query = """
@@ -64,6 +65,7 @@ def post_to_hashnode(title, content):
         post {
           title
           slug
+          dateAdded
         }
       }
     }
@@ -73,14 +75,27 @@ def post_to_hashnode(title, content):
         "input": {
             "title": title,
             "contentMarkdown": content,
-            "publicationId": PUBLICATION_ID,
-            "tags": [{"_id": "56744721958ef13879b9549b", "name": "Git"}],
-            "isPartOfPublication": True
+            "publicationId": PUBLICATION_ID
         }
     }
 
-    response = requests.post(url, headers=headers, json={"query": query, "variables": variables})
-    return response.status_code == 200
+    try:
+        response = requests.post(url, headers=headers, json={"query": query, "variables": variables})
+        data = response.json()
+
+        if "errors" in data:
+            logger.error("❌ Hashnode API error:\n%s", json.dumps(data["errors"], indent=2))
+            print("❌ Full Hashnode response:", data)
+            return False
+
+        logger.info("✅ Successfully posted to Hashnode: %s", title)
+        return True
+
+    except Exception as e:
+        logger.exception("❌ Exception posting to Hashnode: %s", str(e))
+        return False
+
+
 
 @app.get("/")
 def root():
