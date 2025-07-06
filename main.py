@@ -53,17 +53,16 @@ def generate_summary(text: str):
 # === Util: Post to Hashnode ===
 def post_to_hashnode(title: str, content: str) -> bool:
     url = "https://gql.hashnode.com"
-
+    
     headers = {
         "Content-Type": "application/json",
         "Authorization": HASHNODE_TOKEN
     }
 
+    # ✅ Mutation without fields
     query = """
     mutation CreateDraft($input: CreateDraftInput!) {
-      createDraft(input: $input) {
-        id
-      }
+      createDraft(input: $input)
     }
     """
 
@@ -81,11 +80,9 @@ def post_to_hashnode(title: str, content: str) -> bool:
 
         if "errors" in data:
             logger.error("❌ Hashnode API error:\n%s", json.dumps(data["errors"], indent=2))
-            print("❌ Full Hashnode response:", data)
             return False
 
-        draft_id = data["data"]["createDraft"]["id"]
-        logger.info(f"✅ Draft created: {title} (ID: {draft_id})")
+        logger.info("✅ Draft created for: %s", title)
         return True
 
     except Exception as e:
