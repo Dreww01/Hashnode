@@ -1,11 +1,13 @@
 from fastapi import FastAPI, Request
-import subprocess, os, json, requests
+import subprocess, os, json
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from datetime import datetime
 import logging
 import openai
 from openai import OpenAI
+import requests
+from fastapi.responses import JSONResponse
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -28,20 +30,42 @@ class WebhookPayload(BaseModel):
     repository: dict
 
 # === Util: Create AI summary ===
-def generate_summary(text: str) -> str:
+
+def generate_summary(commit_message: str, repo: str, commit_type: str, author: str, timestamp: str) -> str:
     try:
         response = client.chat.completions.create(
             model="gpt-4",
-            messages=[{
-                "role": "user",
-                "content": f"Write a concise developer journal summary from this git commit:\n\n{text}"
-            }],
-            max_tokens=200
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"""
+You're writing a short, developer-style blog journal entry based on a Git commit.
+
+Write it in a clean and informative tone, suitable for a changelog or Hashnode devlog.
+
+Include what changed and why it might matter — even if it's a small refactor or cleanup.
+
+Here is the context:
+
+🔧 Repository: {repo}  
+📂 Type: {commit_type}  
+🧑‍💻 Author: {author}  
+🕒 Timestamp: {timestamp}  
+
+📝 Commit Message: {commit_message}
+"""
+                }
+            ],
+            max_tokens=300,
+            temperature=0.7
         )
+
         return response.choices[0].message.content.strip()
+
     except Exception as e:
         logger.error("OpenAI API failed: %s", e)
-        return text
+        return f"{commit_type}: {commit_message}"
+
     
 
 
@@ -102,46 +126,27 @@ def root():
 @app.post("/webhook")
 async def handle_webhook(request: Request):
     payload = await request.json()
-    repo_name = payload.get("repository", {}).get("full_name", "unknown")
-    logger.info("🔔 Webhook received from repo: %s", repo_name)
+    logger.info("🔔 Webhook received from repo: %s", payload["repository"]["full_name"])
 
     for commit in payload.get("commits", []):
         message = commit.get("message", "")
         commit_type = "Merged" if message.lower().startswith("merge") else "Committed"
+        title = f'{payload["repository"]["full_name"]} – {commit_type}: {message.splitlines()[0][:80]}'
 
-        # Basic metadata
-        author = commit.get("author", {}).get("name", "Unknown")
-        timestamp = commit.get("timestamp", "Unknown time")
-        short_message = message.splitlines()[0][:60]
-
-        # Title format
-        title = f"{repo_name} – {commit_type}: {short_message}"
-
-        # Summary via ChatGPT with context
-        '''
-        contextual_prompt = (
-            f"Write a professional, developer-style blog summary from this Git commit.\n\n"
-            f"Repository: {repo_name}\n"
-            f"Type: {commit_type}\n"
-            f"Author: {author}\n"
-            f"Timestamp: {timestamp}\n\n"
-            f"Commit Message:\n{message}"
+        summary = generate_summary(
+            commit_message=message,
+            repo=payload["repository"]["full_name"],
+            commit_type=commit_type,
+            author=commit.get("author", {}).get("name", "Unknown"),
+            timestamp=commit.get("timestamp", "Unknown")
         )
-        '''
 
-        summary = generate_summary(contextual_prompt)
-
-        # Add commit metadata at the end of the blog post
-        summary += f"\n\n---\n🧑‍💻 Author: **{author}**  \n🕒 Timestamp: **{timestamp}**"
-
-        # Post to Hashnode
         posted = post_to_hashnode(title, summary)
-        if posted:
-            logger.info("✅ Posted to Hashnode: %s", title)
-        else:
-            logger.error("❌ Failed to post: %s", title)
+        log_msg = "✅ Posted to Hashnode" if posted else "❌ Failed to post"
+        logger.info("%s: %s", log_msg, title)
 
-    return {"status": "processed"}
+    return JSONResponse(content={"status": "processed"})
+
 
 
 
