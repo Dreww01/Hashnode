@@ -59,10 +59,11 @@ def post_to_hashnode(title: str, content: str) -> bool:
         "Authorization": HASHNODE_TOKEN
     }
 
-    # ✅ Mutation without fields
     query = """
     mutation CreateDraft($input: CreateDraftInput!) {
-      createDraft(input: $input)
+      createDraft(input: $input) {
+        success
+      }
     }
     """
 
@@ -82,8 +83,13 @@ def post_to_hashnode(title: str, content: str) -> bool:
             logger.error("❌ Hashnode API error:\n%s", json.dumps(data["errors"], indent=2))
             return False
 
-        logger.info("✅ Draft created for: %s", title)
-        return True
+        success = data["data"]["createDraft"]["success"]
+        if success:
+            logger.info("✅ Draft successfully created for: %s", title)
+            return True
+        else:
+            logger.warning("⚠️ Draft creation failed for: %s", title)
+            return False
 
     except Exception as e:
         logger.exception("❌ Exception posting to Hashnode: %s", str(e))
