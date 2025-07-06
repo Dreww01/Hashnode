@@ -79,7 +79,8 @@ def generate_summary(commit_message: str, repo: str, commit_type: str, author: s
         )
 
         # Return the generated summary text
-        return response.choices[0].message.content.strip()
+        content = response.choices[0].message.content
+        return content.strip() if content else f"{commit_type}: {commit_message}"
 
     except Exception as e:
         logger.error("OpenAI API failed: %s", e)
