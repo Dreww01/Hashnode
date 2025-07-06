@@ -141,3 +141,10 @@ async def health_check():
         "status": "healthy",
         "timestamp": datetime.now().isoformat()
     }
+
+@app.get("/test-post")
+def test_post():
+    title = "Test Post from Webhook App"
+    content = "This is a test post to confirm Hashnode integration is working."
+    success = post_to_hashnode(title, content)
+    return {"success": success}
