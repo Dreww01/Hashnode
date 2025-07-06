@@ -25,17 +25,30 @@ class WebhookPayload(BaseModel):
 # === Util: Create AI summary ===
 def generate_summary(text: str):
     if not OPENAI_API_KEY:
+        logger.warning("No OpenAI API key found — returning raw commit message.")
         return text
-    openai.api_key = OPENAI_API_KEY
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[{
-            "role": "user",
-            "content": f"Write a developer blog summary from this merge commit:\n\n{text}"
-        }],
-        max_tokens=200
-    )
-    return response.choices[0].message.content.strip()
+
+    try:
+        openai.api_key = OPENAI_API_KEY
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[{
+                "role": "user",
+                "content": f"Write a short, professional developer blog post summarizing this GitHub merge commit:\n\n{text}"
+            }],
+            max_tokens=200,
+            temperature=0.7,
+        )
+        print(generate_summary("Merge branch 'feature/authentication' into main"))
+
+        return response.choices[0].message.content.strip()
+
+    except Exception as e:
+        logger.error("OpenAI API failed: %s", str(e))
+        return text
+    
+
+
 
 # === Util: Post to Hashnode ===
 def post_to_hashnode(title, content):
