@@ -3,7 +3,10 @@ import subprocess, os, json, openai, requests
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from datetime import datetime
+import logging
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -83,7 +86,7 @@ async def handle_webhook(request: Request):
             title = message.split("\n")[0][:60]
             summary = generate_summary(message)
             posted = post_to_hashnode(title, summary)
-            print("✅ Posted:", title) if posted else print("❌ Failed:", title)
+            logger.info("✅ Posted:", title) if posted else print("❌ Failed:", title)
 
     return {"status": "processed"}
 
