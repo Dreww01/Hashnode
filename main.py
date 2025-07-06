@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, BackgroundTasks
 import subprocess, os, json
 from dotenv import load_dotenv
 from pydantic import BaseModel
@@ -111,6 +111,27 @@ def post_to_hashnode(title: str, content: str) -> bool:
         logger.exception("❌ Exception posting to Hashnode: %s", str(e))
         return False
 
+async def process_commits(payload: dict):
+    repo_name = payload["repository"]["full_name"]
+    logger.info("🔔 Webhook received from repo: %s", repo_name)
+
+    for commit in payload.get("commits", []):
+        message = commit.get("message", "")
+        commit_type = "Merged" if message.lower().startswith("merge") else "Committed"
+        title = f"{repo_name} – {commit_type}: {message.splitlines()[0][:80]}"
+
+        summary = generate_summary(
+            commit_message=message,
+            repo=repo_name,
+            commit_type=commit_type,
+            author=commit.get("author", {}).get("name", "Unknown"),
+            timestamp=commit.get("timestamp", "Unknown")
+        )
+
+        posted = post_to_hashnode(title, summary)
+        status = "✅ Posted to Hashnode" if posted else "❌ Failed to post"
+        logger.info("%s: %s", status, title)
+
 
 
 
@@ -124,28 +145,10 @@ def root():
 # === FastAPI Webhook Endpoint ===
 
 @app.post("/webhook")
-async def handle_webhook(request: Request):
+async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
     payload = await request.json()
-    logger.info("🔔 Webhook received from repo: %s", payload["repository"]["full_name"])
-
-    for commit in payload.get("commits", []):
-        message = commit.get("message", "")
-        commit_type = "Merged" if message.lower().startswith("merge") else "Committed"
-        title = f'{payload["repository"]["full_name"]} – {commit_type}: {message.splitlines()[0][:80]}'
-
-        summary = generate_summary(
-            commit_message=message,
-            repo=payload["repository"]["full_name"],
-            commit_type=commit_type,
-            author=commit.get("author", {}).get("name", "Unknown"),
-            timestamp=commit.get("timestamp", "Unknown")
-        )
-
-        posted = post_to_hashnode(title, summary)
-        log_msg = "✅ Posted to Hashnode" if posted else "❌ Failed to post"
-        logger.info("%s: %s", log_msg, title)
-
-    return JSONResponse(content={"status": "processed"})
+    background_tasks.add_task(process_commits, payload)
+    return {"status": "accepted"}
 
 
 
