@@ -88,20 +88,49 @@ def root():
 
 
 # === FastAPI Webhook Endpoint ===
+
 @app.post("/webhook")
 async def handle_webhook(request: Request):
-    payload = await request.json()  # ✅ parse raw body safely
-    print("🔔 Webhook received:", payload)
+    payload = await request.json()
+    repo_name = payload.get("repository", {}).get("full_name", "unknown")
+    logger.info("🔔 Webhook received from repo: %s", repo_name)
 
     for commit in payload.get("commits", []):
         message = commit.get("message", "")
-        if message.lower().startswith("merge"):
-            title = message.split("\n")[0][:60]
-            summary = generate_summary(message)
-            posted = post_to_hashnode(title, summary)
-            logger.info("✅ Posted:", title) if posted else print("❌ Failed:", title)
+        commit_type = "Merged" if message.lower().startswith("merge") else "Committed"
+
+        # Basic metadata
+        author = commit.get("author", {}).get("name", "Unknown")
+        timestamp = commit.get("timestamp", "Unknown time")
+        short_message = message.splitlines()[0][:60]
+
+        # Title format
+        title = f"{repo_name} – {commit_type}: {short_message}"
+
+        # Summary via ChatGPT with context
+        contextual_prompt = (
+            f"Write a professional, developer-style blog summary from this Git commit.\n\n"
+            f"Repository: {repo_name}\n"
+            f"Type: {commit_type}\n"
+            f"Author: {author}\n"
+            f"Timestamp: {timestamp}\n\n"
+            f"Commit Message:\n{message}"
+        )
+
+        summary = generate_summary(contextual_prompt)
+
+        # Add commit metadata at the end of the blog post
+        summary += f"\n\n---\n🧑‍💻 Author: **{author}**  \n🕒 Timestamp: **{timestamp}**"
+
+        # Post to Hashnode
+        posted = post_to_hashnode(title, summary)
+        if posted:
+            logger.info("✅ Posted to Hashnode: %s", title)
+        else:
+            logger.error("❌ Failed to post: %s", title)
 
     return {"status": "processed"}
+
 
 
 # This is to keep the server awake - so that railway will not shut it down(hosted in thr free tier)
