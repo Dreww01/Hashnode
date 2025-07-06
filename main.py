@@ -84,7 +84,8 @@ def post_to_hashnode(title: str, content: str) -> bool:
             print("❌ Full Hashnode response:", data)
             return False
 
-        logger.info("✅ Draft created with ID: %s", data["data"]["createDraft"]["id"])
+        draft_id = data["data"]["createDraft"]["id"]
+        logger.info(f"✅ Draft created: {title} (ID: {draft_id})")
         return True
 
     except Exception as e:
