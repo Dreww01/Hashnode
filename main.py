@@ -73,14 +73,18 @@ def root():
 
 # === FastAPI Webhook Endpoint ===
 @app.post("/webhook")
-async def handle_webhook(payload: WebhookPayload):
-    for commit in payload.commits:
-        message = commit["message"]
+async def handle_webhook(request: Request):
+    payload = await request.json()  # ✅ parse raw body safely
+    print("🔔 Webhook received:", payload)
+
+    for commit in payload.get("commits", []):
+        message = commit.get("message", "")
         if message.lower().startswith("merge"):
             title = message.split("\n")[0][:60]
             summary = generate_summary(message)
             posted = post_to_hashnode(title, summary)
             print("✅ Posted:", title) if posted else print("❌ Failed:", title)
+
     return {"status": "processed"}
 
 
