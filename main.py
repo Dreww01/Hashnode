@@ -61,11 +61,7 @@ def post_to_hashnode(title: str, content: str) -> bool:
 
     query = """
     mutation CreateDraft($input: CreateDraftInput!) {
-      createDraft(input: $input) {
-        post {
-          id
-        }
-      }
+      createDraft(input: $input)
     }
     """
 
@@ -86,7 +82,7 @@ def post_to_hashnode(title: str, content: str) -> bool:
             print("❌ Full Hashnode response:", data)
             return False
 
-        logger.info("✅ Draft created with post ID: %s", data["data"]["createDraft"]["post"]["id"])
+        logger.info("✅ Draft created on Hashnode for: %s", title)
         return True
 
     except Exception as e:
